@@ -7,7 +7,9 @@ Year :- 2024
 */
 
 import com.hazelcast.jet.core.AbstractProcessor;
+import com.hazelcast.spring.context.SpringAware;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 
 import java.io.Serializable;
@@ -17,21 +19,19 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
+@SpringAware
 public class SquareProcessor extends AbstractProcessor implements Serializable {
 
-    private final ExecutorService executor;
+    @Autowired
+    private transient ExecutorService executor;
 
-//    public SquareProcessor (ExecutorService executor) {
-//        this.executor = executor;
-//    }
+    public SquareProcessor () {
+
+    }
 
     @Override
     protected void init(Context context) throws Exception{
       super.init(context);
-    }
-
-    public SquareProcessor () {
-        this.executor = Executors.newFixedThreadPool(2);
     }
 
 
@@ -44,7 +44,6 @@ public class SquareProcessor extends AbstractProcessor implements Serializable {
     protected boolean tryProcess (int ordinal, @NonNull Object item) {
 
         Integer number = (Integer) item;
-        AtomicInteger output= new AtomicInteger();
         CompletableFuture<Integer> future=CompletableFuture.supplyAsync(() ->number*number, executor);
         future.thenAccept((result)->{
             tryRelease(result);
