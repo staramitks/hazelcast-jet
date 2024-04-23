@@ -2,7 +2,7 @@ package home.amit.sboot.hazelcast.jet.processors;
 /*
 User :- AmitSingh
 Date :- 4/21/2024
-Time :- 2:02 PM
+Time :- 2:01 PM
 Year :- 2024
 */
 
@@ -15,35 +15,34 @@ import org.springframework.lang.NonNull;
 import java.io.Serializable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 
-@SpringAware
 @Slf4j
-public class CubeProcessor extends AbstractProcessor implements Serializable {
+@SpringAware
+public class DivideProcessor extends AbstractProcessor implements Serializable {
 
     @Autowired
     private transient ExecutorService executor;
 
+    public DivideProcessor () {
+
+    }
+
     @Override
     protected void init(Context context) throws Exception{
-        super.init(context);
+      super.init(context);
     }
 
-    public CubeProcessor() {
-
-    }
 
     @Override
-    public boolean isCooperative(){
+    public boolean isCooperative () {
         return true;
     }
 
-
     @Override
-    protected boolean tryProcess(int ordinal, @NonNull Object item) {
-        Integer number=(Integer)item;
-        AtomicInteger output= new AtomicInteger();
-        CompletableFuture<Integer> future=CompletableFuture.supplyAsync(() -> number, executor);
+    protected boolean tryProcess (int ordinal, @NonNull Object item) {
+
+        Integer number = (Integer) item;
+        CompletableFuture<Integer> future=CompletableFuture.supplyAsync(() ->(number), executor);
         future.thenAccept((result)->{
             tryRelease(result);
         });
@@ -51,18 +50,21 @@ public class CubeProcessor extends AbstractProcessor implements Serializable {
         return true;
     }
 
-    private boolean  tryRelease(Object item){
-        log.info("Cube Emitting val {} ",item);
+
+
+    private boolean tryRelease(Object item){
+        log.info("UnderDivide Emitting val {} ",item);
         boolean isSuccess= tryEmit(item);
         if (isSuccess)
         {
-            log.info("Emitted {} from {} ",item, this.getClass().getName());
+            log.info("Emitted from {} ",this.getClass().getName());
         }
         else
         {
-            log.info("Failed to emit {} from {} ",item,this.getClass().getName());
+            log.info("Failed to emit from {} ",this.getClass().getName());
         }
         return isSuccess;
     }
+
 
 }

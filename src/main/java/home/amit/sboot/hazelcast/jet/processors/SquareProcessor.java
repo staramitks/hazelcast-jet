@@ -15,15 +15,13 @@ import org.springframework.lang.NonNull;
 import java.io.Serializable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @SpringAware
 public class SquareProcessor extends AbstractProcessor implements Serializable {
 
     @Autowired
-    private transient ExecutorService executor;
+    private  transient ExecutorService executor;
 
     public SquareProcessor () {
 
@@ -44,7 +42,7 @@ public class SquareProcessor extends AbstractProcessor implements Serializable {
     protected boolean tryProcess (int ordinal, @NonNull Object item) {
 
         Integer number = (Integer) item;
-        CompletableFuture<Integer> future=CompletableFuture.supplyAsync(() ->number*number, executor);
+        CompletableFuture<Integer> future=CompletableFuture.supplyAsync(() ->number, executor);
         future.thenAccept((result)->{
             tryRelease(result);
         });
@@ -54,7 +52,16 @@ public class SquareProcessor extends AbstractProcessor implements Serializable {
 
     private boolean tryRelease(Object item){
         log.info("Square Emitting val {} ",item);
-        return  tryEmit(item);
+        boolean isSuccess= tryEmit(item);
+        if (isSuccess)
+        {
+            log.info("Emitted {} from {} ",item, this.getClass().getName());
+        }
+        else
+        {
+            log.info("Failed to emit {} from {} ",item,this.getClass().getName());
+        }
+        return isSuccess;
     }
 
 
