@@ -52,7 +52,7 @@ public class DivideProcessor extends AbstractProcessor implements Serializable {
 
 
 
-    private synchronized boolean tryRelease(Object item){
+    private boolean tryRelease(Object item){
         log.info("UnderDivide Emitting val {} ",item);
         boolean isSuccess= tryEmit(item);
         if (isSuccess)

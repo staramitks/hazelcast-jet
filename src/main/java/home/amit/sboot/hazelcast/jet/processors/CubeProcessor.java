@@ -51,7 +51,7 @@ public class CubeProcessor extends AbstractProcessor implements Serializable {
         return true;
     }
 
-    private synchronized boolean  tryRelease(Object item){
+    private boolean  tryRelease(Object item){
         log.info("Cube Emitting val {} ",item);
         boolean isSuccess= tryEmit(item);
         if (isSuccess)
