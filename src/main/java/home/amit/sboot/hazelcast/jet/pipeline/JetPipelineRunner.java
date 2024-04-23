@@ -8,6 +8,7 @@ Year :- 2024
 
 import com.hazelcast.jet.Jet;
 import com.hazelcast.jet.JetInstance;
+import com.hazelcast.jet.config.JetConfig;
 import com.hazelcast.jet.config.JobConfig;
 import com.hazelcast.jet.config.ProcessingGuarantee;
 import com.hazelcast.jet.core.ProcessorSupplier;
@@ -19,9 +20,12 @@ import home.amit.sboot.hazelcast.jet.processors.CubeProcessor;
 import home.amit.sboot.hazelcast.jet.processors.SourceProvider;
 import home.amit.sboot.hazelcast.jet.processors.SquareProcessor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,20 +33,31 @@ import java.util.function.Consumer;
 
 @Component
 @Slf4j
-public class JetPipelineRunner implements CommandLineRunner {
+public class JetPipelineRunner implements CommandLineRunner , Serializable {
+
+    @Autowired
+    private transient ApplicationContext applicationContext;
+
+    @Autowired
+    private JetInstance jetInstance;
+
+    @Autowired
+    private JetConfig jetConfig;
+
+//    @Autowired
+//    private ExecutorService executors;
 
     @Override
     public void run(String... args) {
-        JetInstance  jet = Jet.newJetInstance();
         Pipeline pipeline = buildPipeline();
-
         JobConfig jobConfig = streamJobConfig();
-        jet.newJobIfAbsent(pipeline,jobConfig);
+        jetInstance.newJobIfAbsent(pipeline,jobConfig);
     }
 
     public  Pipeline buildPipeline() {
         Pipeline pipeline = Pipeline.create();
-        ExecutorService executor = Executors.newFixedThreadPool(4); //
+
+       // ExecutorService executor = Executors.newFixedThreadPool(4); //
         log.info("Jet Pipeline for Squaring then Cubing numbers");
         // Define source
         StreamSource<Integer> source = SourceBuilder.stream("numbers", ctx -> new SourceProvider())

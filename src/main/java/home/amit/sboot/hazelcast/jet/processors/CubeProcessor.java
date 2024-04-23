@@ -7,32 +7,36 @@ Year :- 2024
 */
 
 import com.hazelcast.jet.core.AbstractProcessor;
+import com.hazelcast.spring.context.SpringAware;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 
-import java.math.BigInteger;
+import java.io.Serializable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@SpringAware
 @Slf4j
-public class CubeProcessor extends AbstractProcessor {
+public class CubeProcessor extends AbstractProcessor implements Serializable {
 
-    private final ExecutorService executor;
+    @Autowired
+    private transient ExecutorService executor;
 
     @Override
     protected void init(Context context) throws Exception{
         super.init(context);
     }
 
-    public CubeProcessor () {
-        this.executor = Executors.newFixedThreadPool(2);
-    }
 
 //    public CubeProcessor(ExecutorService executor) {
 //        this.executor = executor;
 //    }
+
+    public CubeProcessor() {
+
+    }
 
     @Override
     public boolean isCooperative(){
