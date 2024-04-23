@@ -1,4 +1,4 @@
-package home.amit.sboot.hazelcast.jet.pipeline;
+package home.amit.sboot.hazelcast.jet.runner;
 /*
 User :- AmitSingh
 Date :- 4/21/2024
@@ -6,7 +6,6 @@ Time :- 1:56 PM
 Year :- 2024
 */
 
-import com.hazelcast.jet.Jet;
 import com.hazelcast.jet.JetInstance;
 import com.hazelcast.jet.config.JetConfig;
 import com.hazelcast.jet.config.JobConfig;
@@ -19,6 +18,7 @@ import com.hazelcast.jet.pipeline.StreamSource;
 import home.amit.sboot.hazelcast.jet.processors.CubeProcessor;
 import home.amit.sboot.hazelcast.jet.processors.SourceProvider;
 import home.amit.sboot.hazelcast.jet.processors.SquareProcessor;
+import home.amit.sboot.hazelcast.jet.processors.DivideProcessor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -26,10 +26,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
-import java.math.BigInteger;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.function.Consumer;
 
 @Component
 @Slf4j
@@ -68,6 +64,7 @@ public class JetPipelineRunner implements CommandLineRunner , Serializable {
         // Stage 1: Stream numbers from 1 to 100
         pipeline.readFrom(source).withoutTimestamps().peek()
                 .customTransform("squaring number", ProcessorSupplier.of(()->new SquareProcessor()))
+                .customTransform("Under squaring number", ProcessorSupplier.of(()->new DivideProcessor()))
                 .customTransform("Cube number", ProcessorSupplier.of(()->new CubeProcessor()))
                 .writeTo(Sinks.logger());
 

@@ -29,18 +29,13 @@ public class CubeProcessor extends AbstractProcessor implements Serializable {
         super.init(context);
     }
 
-
-//    public CubeProcessor(ExecutorService executor) {
-//        this.executor = executor;
-//    }
-
     public CubeProcessor() {
 
     }
 
     @Override
     public boolean isCooperative(){
-        return false;
+        return true;
     }
 
 
@@ -48,7 +43,7 @@ public class CubeProcessor extends AbstractProcessor implements Serializable {
     protected boolean tryProcess(int ordinal, @NonNull Object item) {
         Integer number=(Integer)item;
         AtomicInteger output= new AtomicInteger();
-        CompletableFuture<Integer> future=CompletableFuture.supplyAsync(() -> number*number*number, executor);
+        CompletableFuture<Integer> future=CompletableFuture.supplyAsync(() -> number, executor);
         future.thenAccept((result)->{
             tryRelease(result);
         });
@@ -56,8 +51,18 @@ public class CubeProcessor extends AbstractProcessor implements Serializable {
         return true;
     }
 
-    private boolean tryRelease(Object item){
+    private synchronized boolean  tryRelease(Object item){
         log.info("Cube Emitting val {} ",item);
-        return  tryEmit(item);
+        boolean isSuccess= tryEmit(item);
+        if (isSuccess)
+        {
+            log.info("Emitted {} from {} ",item, this.getClass().getName());
+        }
+        else
+        {
+            log.info("Failed to emit {} from {} ",item,this.getClass().getName());
+        }
+        return isSuccess;
     }
+
 }
