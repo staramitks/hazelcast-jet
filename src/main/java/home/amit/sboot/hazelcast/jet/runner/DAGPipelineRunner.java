@@ -10,7 +10,10 @@ import com.hazelcast.jet.JetInstance;
 import com.hazelcast.jet.config.JetConfig;
 import com.hazelcast.jet.config.JobConfig;
 import com.hazelcast.jet.config.ProcessingGuarantee;
+import com.hazelcast.jet.core.DAG;
+import com.hazelcast.jet.core.Edge;
 import com.hazelcast.jet.core.ProcessorSupplier;
+import com.hazelcast.jet.core.Vertex;
 import com.hazelcast.jet.pipeline.Pipeline;
 import com.hazelcast.jet.pipeline.Sinks;
 import com.hazelcast.jet.pipeline.SourceBuilder;
@@ -23,11 +26,10 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
-import java.util.concurrent.ExecutorService;
 
-@Component
+//@Component
 @Slf4j
-public class JetPipelineRunner implements CommandLineRunner , Serializable {
+public class DAGPipelineRunner implements CommandLineRunner , Serializable {
 
     @Autowired
     private transient ApplicationContext applicationContext;
@@ -38,36 +40,26 @@ public class JetPipelineRunner implements CommandLineRunner , Serializable {
     @Autowired
     private JetConfig jetConfig;
 
-    @Autowired
-    private ExecutorService executors;
 
     @Override
     public void run(String... args) {
-        Pipeline pipeline = buildPipeline();
+        DAG dag = dag();
         JobConfig jobConfig = streamJobConfig();
-        jetInstance.newJobIfAbsent(pipeline,jobConfig);
+        jetInstance.newJobIfAbsent(dag,jobConfig);
     }
 
-    public  Pipeline buildPipeline() {
-        Pipeline pipeline = Pipeline.create();
+    public  DAG dag() {
 
-       // ExecutorService executor = Executors.newFixedThreadPool(4); //
-        log.info("Jet Pipeline for Squaring then Cubing numbers");
-        // Define source
-        StreamSource<Integer> source = SourceBuilder.stream("numbers", ctx -> new SourceProvider())
-                .fillBufferFn(SourceProvider::generate)
-                .distributed(1)
-                .build();
+        DAG dag = new DAG();
+        final Vertex numbersStreamSource=dag.newVertex("numbers-source-stream",ProcessorSupplier.of(()->new SourceProviderProcessor())).localParallelism(1);
+        final Vertex throttleSource=dag.newVertex("throttle-source-stream",ProcessorSupplier.of(()->new ThrottleProcessor<Integer>(10000))).localParallelism(1);
+        final Vertex squareP=dag.newVertex("Square-stream",ProcessorSupplier.of(()->new SquareProcessor())).localParallelism(1);
+        final Vertex numberPrintSinkP=dag.newVertex("Print-Sink",ProcessorSupplier.of(()->new NumberPrinterSink())).localParallelism(1);
+        dag.edge(Edge.from(numbersStreamSource).to(throttleSource).distributed().unicast())
+                .edge(Edge.from(throttleSource).to(squareP).local().unicast())
+                .edge(Edge.from(squareP).to(numberPrintSinkP).local().unicast());
 
-        // Stage 1: Stream numbers from 1 to 100
-        pipeline.readFrom(source).withoutTimestamps().peek()
-                .customTransform("apply-throttle",ProcessorSupplier.of(()->new ThrottleProcessor<Integer>(2)))
-                .customTransform("squaring number", ProcessorSupplier.of(()->new SquareProcessor()))
-                .customTransform("Under squaring number", ProcessorSupplier.of(()->new DivideProcessor()))
-                .customTransform("Cube number", ProcessorSupplier.of(()->new CubeProcessor()))
-                .writeTo(Sinks.logger());
-
-        return pipeline;
+        return dag;
     }
 
 
