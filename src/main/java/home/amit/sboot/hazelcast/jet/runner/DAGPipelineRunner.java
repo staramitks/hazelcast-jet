@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 
-//@Component
+@Component
 @Slf4j
 public class DAGPipelineRunner implements CommandLineRunner , Serializable {
 
@@ -46,6 +46,7 @@ public class DAGPipelineRunner implements CommandLineRunner , Serializable {
         DAG dag = dag();
         JobConfig jobConfig = streamJobConfig();
         jetInstance.newJobIfAbsent(dag,jobConfig);
+
     }
 
     public  DAG dag() {

@@ -6,8 +6,13 @@ Time :- 2:02 PM
 Year :- 2024
 */
 
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.cp.IAtomicLong;
 import com.hazelcast.jet.core.AbstractProcessor;
 import com.hazelcast.spring.context.SpringAware;
+import home.amit.sboot.hazelcast.jet.monitoring.HazelcastMeterRegistry;
+import home.amit.sboot.hazelcast.jet.monitoring.HazelcastMeterRegistrySingleton;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
@@ -21,11 +26,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class CubeProcessor extends AbstractProcessor implements Serializable {
 
+    private IAtomicLong processCounter;
+
     @Autowired
     private transient ExecutorService executor;
 
+    private transient HazelcastMeterRegistry hazelcastMeterRegistry;
+
     @Override
     protected void init(Context context) throws Exception{
+        final HazelcastInstance hazelcastInstance= context.jetInstance().getHazelcastInstance();
+        HazelcastMeterRegistry hazelcastMeterRegistry = HazelcastMeterRegistrySingleton.getInstance(hazelcastInstance);
+        this.hazelcastMeterRegistry=hazelcastMeterRegistry;
         super.init(context);
     }
 
@@ -51,11 +63,14 @@ public class CubeProcessor extends AbstractProcessor implements Serializable {
         return true;
     }
 
-    private boolean  tryRelease(Object item){
+    private synchronized boolean  tryRelease(Object item){
         log.info("Cube Emitting val {} ",item);
         boolean isSuccess= tryEmit(item);
         if (isSuccess)
         {
+//            log.info("Getting value for HAZ Atomic Reference {} ",this.processCounter.get());
+            this.hazelcastMeterRegistry.incrementCounter(this.getClass().getSimpleName());
+            log.info("Getting value for Custom Meter Registry CubeProcessor {} ",this.hazelcastMeterRegistry.get(this.getClass().getSimpleName()+".process.success"));
             log.info("Emitted {} from {} ",item, this.getClass().getName());
         }
         else

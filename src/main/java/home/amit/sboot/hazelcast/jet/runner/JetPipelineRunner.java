@@ -62,7 +62,7 @@ public class JetPipelineRunner implements CommandLineRunner , Serializable {
         // Stage 1: Stream numbers from 1 to 100
         pipeline.readFrom(source).withoutTimestamps().peek()
                 .customTransform("apply-throttle",ProcessorSupplier.of(()->new ThrottleProcessor<Integer>(2)))
-                .customTransform("squaring number", ProcessorSupplier.of(()->new SquareProcessor()))
+                .customTransform("squaring number", ProcessorSupplier.of(()->new SquareProcessor("SquareProcessor")))
                 .customTransform("Under squaring number", ProcessorSupplier.of(()->new DivideProcessor()))
                 .customTransform("Cube number", ProcessorSupplier.of(()->new CubeProcessor()))
                 .writeTo(Sinks.logger());
