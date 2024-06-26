@@ -7,6 +7,7 @@ Year :- 2024
 */
 
 import com.hazelcast.jet.JetInstance;
+import com.hazelcast.jet.Job;
 import com.hazelcast.jet.config.JetConfig;
 import com.hazelcast.jet.config.JobConfig;
 import com.hazelcast.jet.config.ProcessingGuarantee;
@@ -14,11 +15,11 @@ import com.hazelcast.jet.core.DAG;
 import com.hazelcast.jet.core.Edge;
 import com.hazelcast.jet.core.ProcessorSupplier;
 import com.hazelcast.jet.core.Vertex;
-import com.hazelcast.jet.pipeline.Pipeline;
-import com.hazelcast.jet.pipeline.Sinks;
-import com.hazelcast.jet.pipeline.SourceBuilder;
-import com.hazelcast.jet.pipeline.StreamSource;
-import home.amit.sboot.hazelcast.jet.processors.*;
+import home.amit.sboot.hazelcast.jet.processors.NumberPrinterSink;
+import home.amit.sboot.hazelcast.jet.processors.SourceProviderProcessor;
+import home.amit.sboot.hazelcast.jet.processors.SquareProcessor;
+import home.amit.sboot.hazelcast.jet.processors.ThrottleProcessor;
+import home.amit.sboot.hazelcast.jet.utils.NamesProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -27,7 +28,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 
-@Component
+//@Component
 @Slf4j
 public class DAGPipelineRunner implements CommandLineRunner , Serializable {
 
@@ -43,13 +44,14 @@ public class DAGPipelineRunner implements CommandLineRunner , Serializable {
 
     @Override
     public void run(String... args) {
-        DAG dag = dag();
+        DAG dag = getDagPipeline();
         JobConfig jobConfig = streamJobConfig();
-        jetInstance.newJobIfAbsent(dag,jobConfig);
+        Job job=jetInstance.newJob(dag,jobConfig);
+        job.getMetrics();
 
     }
 
-    public  DAG dag() {
+    public  DAG getDagPipeline() {
 
         DAG dag = new DAG();
         final Vertex numbersStreamSource=dag.newVertex("numbers-source-stream",ProcessorSupplier.of(()->new SourceProviderProcessor())).localParallelism(1);
@@ -66,9 +68,10 @@ public class DAGPipelineRunner implements CommandLineRunner , Serializable {
 
     protected JobConfig streamJobConfig(){
         final JobConfig jobConfig= new JobConfig();
-        jobConfig.setName("Test JOb");
+        jobConfig.setName(NamesProvider.getStreamDAGJobName("square"));
         jobConfig.setSnapshotIntervalMillis(100);
         jobConfig.setProcessingGuarantee(ProcessingGuarantee.AT_LEAST_ONCE);
+        jobConfig.setMetricsEnabled(true);
         return jobConfig;
     }
 

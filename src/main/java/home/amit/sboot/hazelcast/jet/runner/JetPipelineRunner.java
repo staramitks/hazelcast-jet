@@ -7,6 +7,7 @@ Year :- 2024
 */
 
 import com.hazelcast.jet.JetInstance;
+import com.hazelcast.jet.Job;
 import com.hazelcast.jet.config.JetConfig;
 import com.hazelcast.jet.config.JobConfig;
 import com.hazelcast.jet.config.ProcessingGuarantee;
@@ -16,6 +17,7 @@ import com.hazelcast.jet.pipeline.Sinks;
 import com.hazelcast.jet.pipeline.SourceBuilder;
 import com.hazelcast.jet.pipeline.StreamSource;
 import home.amit.sboot.hazelcast.jet.processors.*;
+import home.amit.sboot.hazelcast.jet.utils.NamesProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -45,7 +47,8 @@ public class JetPipelineRunner implements CommandLineRunner , Serializable {
     public void run(String... args) {
         Pipeline pipeline = buildPipeline();
         JobConfig jobConfig = streamJobConfig();
-        jetInstance.newJobIfAbsent(pipeline,jobConfig);
+        Job job = jetInstance.newJobIfAbsent(pipeline, jobConfig);
+        System.out.println(job.getMetrics());
     }
 
     public  Pipeline buildPipeline() {
@@ -61,7 +64,8 @@ public class JetPipelineRunner implements CommandLineRunner , Serializable {
 
         // Stage 1: Stream numbers from 1 to 100
         pipeline.readFrom(source).withoutTimestamps().peek()
-                .customTransform("apply-throttle",ProcessorSupplier.of(()->new ThrottleProcessor<Integer>(2)))
+                .customTransform("apply-throttle",ProcessorSupplier.of(()->new ThrottleProcessor<Integer>(100)))
+                .customTransform("filter-processor",ProcessorSupplier.of(()->new FilterProcessor()))
                 .customTransform("squaring number", ProcessorSupplier.of(()->new SquareProcessor("SquareProcessor")))
                 .customTransform("Under squaring number", ProcessorSupplier.of(()->new DivideProcessor()))
                 .customTransform("Cube number", ProcessorSupplier.of(()->new CubeProcessor()))
@@ -73,7 +77,7 @@ public class JetPipelineRunner implements CommandLineRunner , Serializable {
 
     protected JobConfig streamJobConfig(){
         final JobConfig jobConfig= new JobConfig();
-        jobConfig.setName("Test JOb");
+        jobConfig.setName(NamesProvider.getStreamJobName("square"));
         jobConfig.setSnapshotIntervalMillis(100);
         jobConfig.setProcessingGuarantee(ProcessingGuarantee.AT_LEAST_ONCE);
         return jobConfig;
